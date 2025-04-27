@@ -6,6 +6,7 @@ import os
 import sys
 import time
 import threading
+import textwrap
 import google.generativeai as genai
 import shutil
 
@@ -48,43 +49,54 @@ def get_git_diff(diff_args):
     If no arguments are provided, defaults to staged changes.
     """
     cmd = ["git", "diff"] + diff_args if diff_args else ["git", "diff", "--cached"]
-    result = subprocess.run(cmd, stdout=subprocess.PIPE, text=True)
-    return result.stdout
+    try:
+        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
+        return result.stdout
+    except subprocess.CalledProcessError as e:
+        print(f"Error executing git diff: {e.stderr}", file=sys.stderr)
+        sys.exit(1)
 
 
 def make_prompt(diff_text):
     """
     Construct the prompt for the Gemini API in Markdown.
     """
-    header = """
-You're an expert software engineer performing a detailed code review.
-Evaluate the provided pull request (PR) carefully, considering correctness,
-readability, efficiency, adherence to best practices, and potential edge cases
-or bugs. Provide constructive feedback highlighting specific issues or suggestions
-for improvements. Conclude your review explicitly with either `APPROVED` if the PR
-meets high standards and can be merged without further changes, or `MAKE CHANGES`
-if revisions are required, clearly stating your reasoning.
+    header = textwrap.dedent("""
+    You're an expert software engineer performing a detailed code review.
+    Evaluate the provided pull request (PR) carefully, considering correctness,
+    readability, efficiency, adherence to best practices, and potential edge cases
+    or bugs. Provide constructive feedback highlighting specific issues or suggestions
+    for improvements. Conclude your review explicitly with either `APPROVED` if the PR
+    meets high standards and can be merged without further changes, or `MAKE CHANGES`
+    if revisions are required, clearly stating your reasoning.
 
-**Format in MARKDOWN syntax**
+    **Format in MARKDOWN syntax.** Do not wrap your entire response in markdown code fences (like ```markdown ... ```); just provide the raw markdown content starting directly with your feedback or conclusion.
+                                 
+    Example:
 
-Example:
+    ```
+    Title: [Give a title for the PR]
+    Feedback:
+    - [Specific issue or suggestion #1]
+    - [Specific issue or suggestion #2]
+    - [Further detailed feedback as needed]
+                             
+    Commit message:
+    - [Commit message]
 
-```
-Feedback:
-- [Specific issue or suggestion #1]
-- [Specific issue or suggestion #2]
-- [Further detailed feedback as needed]
+    Conclusion: APPROVED
 
-Conclusion: APPROVED
+    or
 
-or
-
-Feedback:
-- ...
-Conclusion: MAKE CHANGES
-```
-
-"""
+    ```
+    Title: [Give a title for the PR]
+    Feedback:
+    - [Specific issue or suggestion #1]
+    - [Specific issue or suggestion #2]
+    - [Further detailed feedback as needed]
+                             
+    Conclusion: MAKE CHANGES
+    """)
     return header + diff_text
 
 
@@ -110,18 +122,18 @@ def main():
 
     diff_text = get_git_diff(args.diff_args)
     if not diff_text.strip():
-        print("No changes found.")
+        print("No changes found.", file=sys.stderr)
         sys.exit(0)
 
     prompt = make_prompt(diff_text)
-    print("Sending diff to Gemini for review...")
+    print("Sending diff to Gemini for review...", file=sys.stderr)
 
     spinner = Spinner("Waiting for Gemini")
     spinner.start()
     review_stream = send_to_gemini(prompt, api_key)
     spinner.stop()
 
-    print("\nGemini PR Review:\n")
+    print("\nGemini PR Review:\n", file=sys.stderr)
 
     # Decide whether to use bat or fallback
     bat_path = shutil.which("bat")
