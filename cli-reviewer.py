@@ -75,7 +75,7 @@ def make_prompt(diff_text):
     Example:
 
     ```
-    Title: [Give a title for the PR]
+    ## Title: [Give a title for the PR]
     Feedback:
     - [Specific issue or suggestion #1]
     - [Specific issue or suggestion #2]
@@ -89,7 +89,7 @@ def make_prompt(diff_text):
     or
 
     ```
-    Title: [Give a title for the PR]
+    ## Title: [Give a title for the PR]
     Feedback:
     - [Specific issue or suggestion #1]
     - [Specific issue or suggestion #2]
