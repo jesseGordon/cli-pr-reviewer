@@ -58,7 +58,7 @@ def make_prompt(diff_text):
     Construct the prompt for the Gemini API.
     """
     return (
-        "Please review this pull request diff carefully and provide detailed feedback:\n\n"
+        "Please review this pull request diff carefully and provide detailed yet concise feedback:\n\n"
         + diff_text
     )
 
@@ -68,7 +68,7 @@ def send_to_gemini(prompt, api_key):
     Send the prompt to the Gemini API and return the response text.
     """
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel("gemini-pro")
+    model = genai.GenerativeModel("gemini-2.5-flash-preview-04-17")
     response = model.generate_content(prompt)
     return response.text
 
