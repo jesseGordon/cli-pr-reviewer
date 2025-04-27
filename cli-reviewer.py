@@ -58,7 +58,27 @@ def make_prompt(diff_text):
     Construct the prompt for the Gemini API.
     """
     return (
-        "Please review this pull request diff carefully and provide detailed yet concise feedback:\n\n"
+        """
+        You're an expert software engineer performing a detailed code review. Evaluate the provided pull request (PR) carefully, considering correctness, readability, efficiency, adherence to best practices, and potential edge cases or bugs. Provide constructive feedback highlighting specific issues or suggestions for improvements. Conclude your review explicitly with either `APPROVED` if the PR meets high standards and can be merged without further changes, or `MAKE CHANGES` if revisions are required, clearly stating your reasoning.
+
+        Example response format:
+
+
+        Feedback:
+        - [Specific issue or suggestion #1]
+        - [Specific issue or suggestion #2]
+        - [Further detailed feedback as needed]
+
+        Conclusion: APPROVED
+
+        or
+
+        Feedback:
+        - [Specific issue or suggestion #1]
+        - [Specific issue or suggestion #2]
+        - [Further detailed feedback as needed]
+
+        Conclusion: MAKE CHANGES"""
         + diff_text
     )
 
