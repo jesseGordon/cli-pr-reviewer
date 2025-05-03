@@ -394,19 +394,20 @@ def config_list(ctx: click.Context) -> None:
     """List all configuration values."""
     config = ctx.obj['config']
     
-    # Format config for display
-    config_lines = ["Current Configuration:"]
+    # Format config for display in simplified style
+    config_lines = []
+    config_lines.append("[bold]Current Configuration:[/]")
     
     for key, value in config.items():
         if key == 'api_keys':
-            config_lines.append(f"{key}:")
+            config_lines.append(f"\n[cyan]{key}:[/]")
             for provider, api_key in value.items():
                 masked_key = "****" if api_key else "<not set>"
-                config_lines.append(f"  {provider}: {masked_key}")
+                config_lines.append(f"  [green]{provider}:[/] {masked_key}")
         else:
-            config_lines.append(f"{key}: {value}")
+            config_lines.append(f"[cyan]{key}:[/] [green]{value}[/]")
     
-    console.print(Panel("\n".join(config_lines), title="Configuration", border_style="cyan", box=ROUNDED))
+    console.print("\n".join(config_lines))
 
 
 @config_command.command('get')
