@@ -1,33 +1,23 @@
 # Changelog
 
-## v2.0.0 (2024)
+## v2.0.0 (Unreleased)
 
-### Major Changes
-- Completely refactored CLI using Click and Rich libraries
-- Added proper subcommands: `review`, `diff`, `config`, `completion`
-- Added configuration management with hierarchical config system
-- Added support for multiple AI providers (Gemini, OpenAI, Anthropic)
-- Added rich terminal output with markdown rendering
-- Added proper error handling and user-friendly error messages
-- Added command suggestion for unknown commands
-- Added shell completion support for Bash, Zsh, and Fish
+### Features
+- Added improved syntax highlighting with Pygments
+- Support for multiple AI providers (Gemini, OpenAI, Anthropic)
+- Added diff truncation to handle large diffs
+- Advanced diff sources (staged, unstaged, commit ranges)
 
-### New Features
-- **Config Management**: Added `config` subcommand with `list`, `get`, `set`, and `unset` operations
-- **Provider Selection**: Support for choosing different AI providers via config or CLI flags
-- **Shell Completion**: Added autocomplete scripts for various shells
-- **Better UX**: Improved progress indicators, error messages, and help text
-- **Diff Preview**: Added `diff` subcommand to preview what will be sent for review
-
-### Other Improvements
-- Added proper type annotations throughout the codebase
-- Better exception handling with custom error classes
-- More informative error messages with appropriate exit codes
-- Comprehensive documentation in README.md
+### Packaging & Installation
+- Added standalone binary distribution using PyInstaller
+- Made package pip-installable with proper entry points
+- Added support for isolated installation with pipx
+- Enhanced Makefile with targets for different installation methods
 
 ## v1.0.0 (Initial Release)
 
-- Basic PR review functionality using Gemini API
-- Simple spinner for progress indication
-- Git diff integration
-- Optional Markdown rendering with 'bat' if available 
+### Features
+- Basic PR review capabilities using Gemini AI
+- Git integration for reviewing code changes
+- Configuration management via CLI and config file
+- Rich terminal output with markdown formatting 

@@ -16,7 +16,33 @@ An AI-powered command-line tool for reviewing pull requests and code changes usi
 
 ## Installation
 
-### Option 1: Via Python Package
+There are several ways to install the PR Review CLI tool:
+
+### Option 1: Pip Installation (Recommended for most users)
+
+```bash
+# Install directly from PyPI (once published)
+pip install pr-review
+
+# Or install from the repository
+git clone https://github.com/your-username/cli-pr-reviewer.git
+cd cli-pr-reviewer
+pip install .
+```
+
+### Option 2: Pipx Installation (Isolated environment)
+
+```bash
+# Install in an isolated environment (recommended)
+pipx install pr-review
+
+# Or install from the repository
+git clone https://github.com/your-username/cli-pr-reviewer.git
+cd cli-pr-reviewer
+pipx install .
+```
+
+### Option 3: From Source
 
 ```bash
 # Clone the repository
@@ -26,15 +52,20 @@ cd cli-pr-reviewer
 # Install dependencies
 pip install -r requirements.txt
 
-# Optional: Make the script executable and add to your PATH
+# Make the script executable and add to your PATH
 chmod +x cli-reviewer.py
 ln -s $(pwd)/cli-reviewer.py /usr/local/bin/pr-review
+
+# Or use the Makefile
+make install
 ```
 
-### Option 2: Standalone Binary
+### Option 4: Standalone Binary
 
 ```bash
 # Build the standalone executable
+make binary
+# or
 python build_executable.py
 
 # Install the executable
@@ -45,7 +76,7 @@ cp dist/pr-review ~/bin/
 
 ## Requirements
 
-- Python 3.8+ (for Python package installation)
+- Python 3.8+ (not needed for standalone binary)
 - Git
 - API keys for at least one of the supported AI providers
 

@@ -39,6 +39,9 @@ def build_executable():
             else:
                 path.unlink()
     
+    # Check if we're in a package structure or standalone script
+    package_structure = Path("pr_review").exists() and Path("pr_review/__init__.py").exists()
+    
     # Build command
     cmd = [
         "pyinstaller",
@@ -46,9 +49,24 @@ def build_executable():
         "--name", "pr-review",      # Name of the output file
         "--clean",                  # Clean PyInstaller cache
         "--noconfirm",              # Replace output directory without asking
-        "--add-data", "README.md:." if is_windows else "README.md:.",  # Include README
-        "cli-reviewer.py",          # Main script
     ]
+    
+    # Add data files
+    if is_windows:
+        cmd.extend(["--add-data", "README.md;."])
+    else:
+        cmd.extend(["--add-data", "README.md:."])
+    
+    # Determine the entry point
+    if package_structure:
+        print("Building from package structure...")
+        # Use the module entry point
+        cmd.append("-m")
+        cmd.append("pr_review.cli")
+    else:
+        print("Building from standalone script...")
+        # Use the script directly
+        cmd.append("cli-reviewer.py")
     
     # Run PyInstaller
     subprocess.check_call(cmd)

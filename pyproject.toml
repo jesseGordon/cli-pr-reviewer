@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pr-review"
+version = "2.0.0"
+description = "AI-powered CLI tool for reviewing pull requests and code changes"
+readme = "README.md"
+authors = [
+    {name = "PR Review Team"}
+]
+license = {text = "MIT"}
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Software Development :: Version Control :: Git",
+]
+dependencies = [
+    "click>=8.1.3",
+    "rich>=13.3.5",
+    "pygments>=2.15.0",
+    "rich-click==1.6.1",
+    "google-generativeai>=0.4.0",
+    "tomli>=2.0.1",
+    "tomli-w>=1.0.0",
+    "pyinstaller>=6.0.0",
+]
+requires-python = ">=3.8"
+
+[project.urls]
+"Homepage" = "https://github.com/your-username/cli-pr-reviewer"
+"Bug Tracker" = "https://github.com/your-username/cli-pr-reviewer/issues"
+
+[project.scripts]
+pr-review = "pr_review.cli:main"
+
+[tool.setuptools]
+packages = ["pr_review"] 
