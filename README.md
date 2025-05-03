@@ -18,7 +18,24 @@ An AI-powered command-line tool for reviewing pull requests and code changes usi
 
 There are several ways to install the PR Review CLI tool:
 
-### Option 1: Pip Installation (Recommended for most users)
+### Option 1: Download Pre-built Binary (Easiest)
+
+```bash
+# Download the appropriate binary for your OS from:
+# https://github.com/your-username/cli-pr-reviewer/releases
+
+# Make it executable (macOS/Linux)
+chmod +x pr-review-<your-os>
+
+# Move it to a directory in your PATH
+sudo mv pr-review-<your-os> /usr/local/bin/pr-review
+# or 
+mv pr-review-<your-os> ~/bin/pr-review
+```
+
+This is the simplest option as it doesn't require Python or any dependencies.
+
+### Option 2: Pip Installation (Recommended for Python users)
 
 ```bash
 # Install directly from PyPI (once published)
@@ -30,7 +47,7 @@ cd cli-pr-reviewer
 pip install .
 ```
 
-### Option 2: Pipx Installation (Isolated environment)
+### Option 3: Pipx Installation (Isolated environment)
 
 ```bash
 # Install in an isolated environment (recommended)
@@ -42,7 +59,7 @@ cd cli-pr-reviewer
 pipx install .
 ```
 
-### Option 3: From Source
+### Option 4: From Source
 
 ```bash
 # Clone the repository
@@ -60,7 +77,7 @@ ln -s $(pwd)/cli-reviewer.py /usr/local/bin/pr-review
 make install
 ```
 
-### Option 4: Standalone Binary
+### Option 5: Standalone Binary
 
 ```bash
 # Build the standalone executable
@@ -211,6 +228,35 @@ You can disable this with the `--no-color` flag:
 ```bash
 pr-review diff --no-color
 ```
+
+## GitHub Actions
+
+This repository includes GitHub Actions workflows for automating builds and releases:
+
+### Automatic Builds
+
+- Standalone executables for Windows, macOS, and Linux are automatically built on each release tag
+- The package is automatically tested on multiple Python versions
+- The package is automatically published to PyPI on each GitHub release
+
+### Downloading Binaries
+
+Pre-built binaries are available from:
+- GitHub Releases: https://github.com/your-username/cli-pr-reviewer/releases
+
+### Building Your Own Binaries
+
+If you want to build your own binaries, you can use:
+
+```bash
+# Using the GitHub Actions workflow manually
+# (Go to Actions tab in GitHub and run the "Build and Release Executables" workflow)
+
+# Or build locally
+make binary
+```
+
+See the [GitHub Actions documentation](.github/README.md) for more details.
 
 ## License
 

@@ -39,6 +39,17 @@ def build_executable():
             else:
                 path.unlink()
     
+    # Create a simple entry point script for PyInstaller
+    entry_script = Path("cli_entry_point.py")
+    with open(entry_script, "w") as f:
+        f.write("""#!/usr/bin/env python3
+# Entry point script for PyInstaller
+from pr_review.cli import main
+
+if __name__ == "__main__":
+    main()
+""")
+    
     # Build command
     cmd = [
         "pyinstaller",
@@ -54,31 +65,43 @@ def build_executable():
     else:
         cmd.extend(["--add-data", "README.md:."])
     
-    # Use the module as entry point
-    cmd.append("-m")
-    cmd.append("pr_review")
+    # Add entry script
+    cmd.append(str(entry_script))
     
-    # Run PyInstaller
-    subprocess.check_call(cmd)
-    
-    # Verify executable was created
-    executable_path = dist_dir / executable_name
-    if executable_path.exists():
-        print(f"Successfully built executable: {executable_path}")
-        # Make binary executable on Unix-like systems
-        if not is_windows:
-            os.chmod(executable_path, 0o755)
+    try:
+        # Run PyInstaller
+        subprocess.check_call(cmd)
         
-        print("Installation instructions:")
-        print("1. Copy the executable to a directory in your PATH:")
-        if is_windows:
-            print("   copy dist\\pr-review.exe C:\\Users\\<user>\\AppData\\Local\\Programs\\Python\\Scripts")
+        # Clean up temporary entry point
+        entry_script.unlink()
+        
+        # Verify executable was created
+        executable_path = dist_dir / executable_name
+        if executable_path.exists():
+            print(f"Successfully built executable: {executable_path}")
+            # Make binary executable on Unix-like systems
+            if not is_windows:
+                os.chmod(executable_path, 0o755)
+            
+            print("Installation instructions:")
+            print("1. Copy the executable to a directory in your PATH:")
+            if is_windows:
+                print("   copy dist\\pr-review.exe C:\\Users\\<user>\\AppData\\Local\\Programs\\Python\\Scripts")
+            else:
+                print("   sudo cp dist/pr-review /usr/local/bin/")
+                print("   # or")
+                print("   cp dist/pr-review ~/bin/")
+            
+            print("\nTo share with others:")
+            print("- Simply send them the executable file")
+            print("- They can place it in their PATH and run it directly")
+            print("- No Python installation or dependencies required")
         else:
-            print("   sudo cp dist/pr-review /usr/local/bin/")
-            print("   # or")
-            print("   cp dist/pr-review ~/bin/")
-    else:
-        print(f"Error: Executable not found at {executable_path}")
+            print(f"Error: Executable not found at {executable_path}")
+    except subprocess.CalledProcessError as e:
+        print(f"Error running PyInstaller: {e}")
+        if entry_script.exists():
+            entry_script.unlink()
 
 if __name__ == "__main__":
     ensure_pyinstaller()
