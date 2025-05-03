@@ -1,14 +1,14 @@
 # Makefile for installing the PR Review CLI tool
 
-CLI_NAME = git-pr-review
+CLI_NAME = pr-review
 SCRIPT_PATH = $(PWD)/cli-reviewer.py
 INSTALL_PATH = /usr/local/bin/$(CLI_NAME)
 
-.PHONY: install uninstall reinstall binary pip-install pipx-install clean dist
+.PHONY: install uninstall reinstall binary pip-install pipx-install clean dist setup-dev setup-binary setup-pipx
 
-# Traditional symlink installation
+# Direct installation (traditional symlink, legacy method)
 install:
-	@echo "Installing $(CLI_NAME)..."
+	@echo "Installing $(CLI_NAME) via symlink..."
 	@sudo ln -sf $(SCRIPT_PATH) $(INSTALL_PATH)
 	@sudo chmod +x $(INSTALL_PATH)
 	@echo "$(CLI_NAME) installed successfully."
@@ -28,12 +28,12 @@ binary:
 # Install from source with pip
 pip-install:
 	@echo "Installing with pip..."
-	pip install .
+	pip install -e .
 
 # Install from source with pipx (isolated environment)
 pipx-install:
 	@echo "Installing with pipx (isolated environment)..."
-	pipx install .
+	pipx install --editable --force .
 
 # Clean build artifacts
 clean:
@@ -48,6 +48,22 @@ dist: clean
 	python -m build
 	@echo "Built distribution packages. Use 'twine upload dist/*' to upload to PyPI."
 
-# All-in-one setup: builds binary and installs with pipx
-setup: clean binary pipx-install
+# Set up development environment
+setup-dev: clean
+	@echo "Setting up development environment..."
+	pip install -e ".[dev]"
+	@echo "Development setup complete."
+
+# Set up binary installation
+setup-binary: clean binary
+	@echo "Installing binary to PATH..."
+	mkdir -p $(HOME)/bin
+	cp dist/$(CLI_NAME) $(HOME)/bin/
+	@echo "Binary installed to ~/bin/$(CLI_NAME)"
+	@echo "Ensure ~/bin is in your PATH."
+
+# Set up pipx installation (recommended for users)
+setup-pipx: clean
+	@echo "Installing with pipx (isolated environment)..."
+	pipx install .
 

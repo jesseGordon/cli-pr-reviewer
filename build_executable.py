@@ -30,7 +30,7 @@ def build_executable():
     # Cleanup any previous build artifacts
     dist_dir = Path("dist")
     build_dir = Path("build")
-    spec_file = Path("cli-reviewer.spec")
+    spec_file = Path("pr-review.spec")
     
     for path in [dist_dir, build_dir, spec_file]:
         if path.exists():
@@ -38,9 +38,6 @@ def build_executable():
                 shutil.rmtree(path)
             else:
                 path.unlink()
-    
-    # Check if we're in a package structure or standalone script
-    package_structure = Path("pr_review").exists() and Path("pr_review/__init__.py").exists()
     
     # Build command
     cmd = [
@@ -57,16 +54,9 @@ def build_executable():
     else:
         cmd.extend(["--add-data", "README.md:."])
     
-    # Determine the entry point
-    if package_structure:
-        print("Building from package structure...")
-        # Use the module entry point
-        cmd.append("-m")
-        cmd.append("pr_review.cli")
-    else:
-        print("Building from standalone script...")
-        # Use the script directly
-        cmd.append("cli-reviewer.py")
+    # Use the module as entry point
+    cmd.append("-m")
+    cmd.append("pr_review")
     
     # Run PyInstaller
     subprocess.check_call(cmd)
