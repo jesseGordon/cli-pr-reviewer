@@ -7,7 +7,7 @@ import textwrap
 import threading
 import time
 from pathlib import Path
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Union
 from difflib import get_close_matches
 
 import click
@@ -20,6 +20,8 @@ from rich.table import Table
 from rich.panel import Panel
 from rich.box import ROUNDED
 from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
+from rich.syntax import Syntax
+from rich.rule import Rule
 
 # Global constants
 DEFAULT_CONFIG = {
@@ -165,15 +167,59 @@ def save_config(config: Dict[str, Any]) -> None:
         raise PrReviewError(f"Error saving config: {e}", exit_code=2)
 
 
-def get_git_diff(diff_args: List[str]) -> str:
+def construct_diff_command(staged: bool = False, unstaged: bool = False, 
+                         file_path: Optional[str] = None, commit: Optional[str] = None, 
+                         diff_args: List[str] = None) -> List[str]:
+    """Construct git diff command based on options"""
+    cmd = ["git", "diff"]
+    
+    if staged:
+        cmd.append("--cached")
+    elif file_path:
+        cmd.append("--")
+        cmd.append(file_path)
+    elif commit:
+        # Support specific commit or commit range
+        if ".." in commit:
+            # It's a range
+            cmd.append(commit)
+        else:
+            # Single commit
+            cmd.append(f"{commit}^..{commit}")
+    elif diff_args:
+        cmd.extend(diff_args)
+    elif not unstaged:  # Default to staged if nothing specified
+        cmd.append("--cached")
+    
+    return cmd
+
+
+def get_git_diff(staged: bool = False, unstaged: bool = False, 
+                file_path: Optional[str] = None, commit: Optional[str] = None, 
+                diff_args: List[str] = None, max_chars: Optional[int] = None) -> str:
     """
     Return the output of `git diff` with the given arguments.
-    If no arguments are provided, defaults to staged changes.
+    
+    Args:
+        staged: Get staged changes
+        unstaged: Get unstaged changes
+        file_path: Get diff for specific file
+        commit: Get diff for specific commit
+        diff_args: Additional args to pass to git diff
+        max_chars: Maximum number of characters to include in the diff
     """
-    cmd = ["git", "diff"] + diff_args if diff_args else ["git", "diff", "--cached"]
+    cmd = construct_diff_command(staged, unstaged, file_path, commit, diff_args)
+    
     try:
         result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
-        return result.stdout
+        diff_text = result.stdout
+        
+        if max_chars and len(diff_text) > max_chars:
+            # Truncate the diff text
+            truncated_message = f"\n\n[Diff truncated to {max_chars} characters. Original size: {len(diff_text)} characters]"
+            diff_text = diff_text[:max_chars] + truncated_message
+        
+        return diff_text
     except subprocess.CalledProcessError as e:
         raise PrReviewError(f"Git error: {e.stderr.strip()}", exit_code=3)
 
@@ -219,6 +265,45 @@ def make_prompt(diff_text: str) -> str:
     Conclusion: MAKE CHANGES
     """)
     return header + diff_text
+
+
+def highlight_diff(diff_text: str) -> None:
+    """Syntax highlight a git diff using rich"""
+    if not diff_text.strip():
+        console.print("[yellow]No changes found.[/]")
+        return
+    
+    # Split the diff into files for better presentation
+    files = []
+    current_file = []
+    current_file_name = None
+    
+    for line in diff_text.splitlines():
+        if line.startswith('diff --git'):
+            if current_file and current_file_name:
+                files.append((current_file_name, '\n'.join(current_file)))
+            current_file = [line]
+            # Extract filename from diff --git line
+            parts = line.split()
+            if len(parts) >= 3:
+                current_file_name = parts[2].lstrip('a/')
+            else:
+                current_file_name = "unknown"
+        else:
+            current_file.append(line)
+    
+    # Add the last file
+    if current_file and current_file_name:
+        files.append((current_file_name, '\n'.join(current_file)))
+    
+    # Display each file with syntax highlighting
+    for i, (filename, content) in enumerate(files):
+        if i > 0:
+            console.print(Rule())
+        
+        console.print(f"[bold blue]{filename}[/]")
+        syntax = Syntax(content, "diff", theme="monokai", line_numbers=True)
+        console.print(syntax)
 
 
 def send_to_gemini(prompt: str, api_key: str, model: str) -> Any:
@@ -283,19 +368,31 @@ def cli(ctx: click.Context, verbose: bool) -> None:
 
 
 @cli.command('review', short_help="Review code changes")
-@click.argument('diff_args', nargs=-1)
+@click.option('--staged', is_flag=True, help="Review staged changes (default if no option provided)")
+@click.option('--unstaged', is_flag=True, help="Review unstaged changes")
+@click.option('--file', type=str, help="Review changes in specific file")
+@click.option('--commit', type=str, help="Review changes in specific commit or commit range (e.g., SHA or SHA1..SHA2)")
+@click.option('--max-chars', type=int, help="Maximum characters to include in the diff")
 @click.option('--provider', help="AI provider to use [gemini|openai|anthropic]")
 @click.option('--model', help="Specific model to use")
+@click.argument('diff_args', nargs=-1)
 @click.pass_context
-def review_command(ctx: click.Context, diff_args: List[str], provider: Optional[str], model: Optional[str]) -> None:
+def review_command(ctx: click.Context, staged: bool, unstaged: bool, file: Optional[str], 
+                  commit: Optional[str], max_chars: Optional[int], provider: Optional[str], 
+                  model: Optional[str], diff_args: List[str]) -> None:
     """
     Review code changes using AI.
     
-    DIFF_ARGS are passed directly to 'git diff'. If not provided, 
-    staged changes (--cached) will be reviewed.
+    By default, reviews staged changes if no options are provided.
+    You can specify different sources of changes with options, or provide
+    arguments to be passed directly to 'git diff'.
     
     Examples:
       pr-review review                  # Review staged changes
+      pr-review review --unstaged       # Review unstaged changes
+      pr-review review --file path/to/file.js  # Review changes in specific file
+      pr-review review --commit abc123  # Review changes in specific commit
+      pr-review review --max-chars 5000 # Limit diff size
       pr-review review HEAD~3..HEAD     # Review last 3 commits
     """
     try:
@@ -315,8 +412,16 @@ def review_command(ctx: click.Context, diff_args: List[str], provider: Optional[
             console.print(Panel(error_msg, title="API Key Error", border_style="red", box=ROUNDED))
             sys.exit(1)
         
-        # Get the git diff
-        diff_text = get_git_diff(list(diff_args))
+        # Get the git diff based on options
+        diff_text = get_git_diff(
+            staged=staged,
+            unstaged=unstaged,
+            file_path=file,
+            commit=commit,
+            diff_args=list(diff_args) if diff_args else None,
+            max_chars=max_chars
+        )
+        
         if not diff_text.strip():
             console.print(Panel("No changes found.", title="Information", border_style="yellow", box=ROUNDED))
             return
@@ -347,28 +452,52 @@ def review_command(ctx: click.Context, diff_args: List[str], provider: Optional[
 
 
 @cli.command('diff', short_help="Show diff to be reviewed")
+@click.option('--staged', is_flag=True, help="Show staged changes (default if no option provided)")
+@click.option('--unstaged', is_flag=True, help="Show unstaged changes")
+@click.option('--file', type=str, help="Show changes in specific file")
+@click.option('--commit', type=str, help="Show changes in specific commit or commit range (e.g., SHA or SHA1..SHA2)")
+@click.option('--max-chars', type=int, help="Maximum characters to include in the diff")
+@click.option('--no-color', is_flag=True, help="Disable syntax highlighting")
 @click.argument('diff_args', nargs=-1)
 @click.pass_context
-def diff_command(ctx: click.Context, diff_args: List[str]) -> None:
+def diff_command(ctx: click.Context, staged: bool, unstaged: bool, file: Optional[str], 
+                commit: Optional[str], max_chars: Optional[int], no_color: bool, 
+                diff_args: List[str]) -> None:
     """
-    Show the diff that would be sent for review.
+    Show the diff that would be sent for review with syntax highlighting.
     
-    This is useful to preview what will be sent to the AI service.
-    DIFF_ARGS are passed directly to 'git diff'. If not provided, 
-    staged changes (--cached) will be used.
+    By default, shows staged changes if no options are provided.
+    You can specify different sources of changes with options, or provide
+    arguments to be passed directly to 'git diff'.
+    
+    Examples:
+      pr-review diff                   # Show staged changes
+      pr-review diff --unstaged        # Show unstaged changes
+      pr-review diff --file path/to/file.js  # Show changes in specific file
+      pr-review diff --commit abc123   # Show changes in specific commit
+      pr-review diff --max-chars 5000  # Limit diff size
+      pr-review diff HEAD~3..HEAD      # Show last 3 commits
     """
     try:
-        diff_text = get_git_diff(list(diff_args))
+        # Get the git diff based on options
+        diff_text = get_git_diff(
+            staged=staged,
+            unstaged=unstaged,
+            file_path=file,
+            commit=commit,
+            diff_args=list(diff_args) if diff_args else None,
+            max_chars=max_chars
+        )
+        
         if not diff_text.strip():
             console.print(Panel("No changes found.", title="Information", border_style="yellow", box=ROUNDED))
             return
         
-        # Use colorized output if available
-        try:
-            subprocess.run(["git", "diff", "--color=always"] + list(diff_args) if diff_args else ["git", "diff", "--color=always", "--cached"], check=True)
-        except subprocess.CalledProcessError:
-            # Fall back to plain text if color diff fails
-            console.print(Panel(diff_text, title="Git Diff", border_style="blue", box=ROUNDED))
+        # Show the diff with or without syntax highlighting
+        if no_color:
+            console.print(diff_text)
+        else:
+            highlight_diff(diff_text)
     
     except PrReviewError as e:
         console.print(Panel(f"Error: {e.message}", title="Error", border_style="red", box=ROUNDED))
