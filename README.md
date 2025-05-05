@@ -20,9 +20,11 @@ There are several ways to install the PR Review CLI tool:
 
 ### Option 1: Download Pre-built Binary (Easiest)
 
+For users who don't have Python installed or prefer a standalone executable:
+
 ```bash
 # Download the appropriate binary for your OS from:
-# https://github.com/your-username/cli-pr-reviewer/releases
+# https://github.com/jesseGordon/cli-pr-reviewer/releases
 
 # Make it executable (macOS/Linux)
 chmod +x pr-review-<your-os>
@@ -35,60 +37,37 @@ mv pr-review-<your-os> ~/bin/pr-review
 
 This is the simplest option as it doesn't require Python or any dependencies.
 
-### Option 2: Pip Installation (Recommended for Python users)
+### Option 2: Pipx Installation (Recommended for Python users)
+
+`pipx` installs the tool and its dependencies in an isolated environment, preventing conflicts with other Python projects. This is the recommended way to install Python CLI tools.
 
 ```bash
-# Install directly from PyPI (once published)
-pip install pr-review
+# Install pipx if you don't have it
+# See: https://pipx.pypa.io/stable/installation/
+python3 -m pip install --user pipx
+python3 -m pipx ensurepath
 
-# Or install from the repository
-git clone https://github.com/your-username/cli-pr-reviewer.git
-cd cli-pr-reviewer
-pip install .
-```
-
-### Option 3: Pipx Installation (Isolated environment)
-
-```bash
-# Install in an isolated environment (recommended)
+# Install pr-review
 pipx install pr-review
 
-# Or install from the repository
-git clone https://github.com/your-username/cli-pr-reviewer.git
-cd cli-pr-reviewer
-pipx install .
+# Or install directly from the repository
+pipx install git+https://github.com/jesseGordon/cli-pr-reviewer.git
 ```
 
-### Option 4: From Source
+### Option 3: Pip Installation
+
+You can install directly using `pip`. Using a virtual environment is recommended.
 
 ```bash
-# Clone the repository
-git clone https://github.com/your-username/cli-pr-reviewer.git
+# Install directly from PyPI
+pip install pr-review
+
+# Or install from the repository (in a virtual environment)
+# python -m venv .venv
+# source .venv/bin/activate
+git clone https://github.com/jesseGordon/cli-pr-reviewer.git
 cd cli-pr-reviewer
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Make the script executable and add to your PATH
-chmod +x cli-reviewer.py
-ln -s $(pwd)/cli-reviewer.py /usr/local/bin/pr-review
-
-# Or use the Makefile
-make install
-```
-
-### Option 5: Standalone Binary
-
-```bash
-# Build the standalone executable
-make binary
-# or
-python build_executable.py
-
-# Install the executable
-sudo cp dist/pr-review /usr/local/bin/
-# or
-cp dist/pr-review ~/bin/
+pip install .
 ```
 
 ## Requirements
@@ -256,18 +235,18 @@ pr-review diff --no-color
 
 ## GitHub Actions
 
-This repository includes GitHub Actions workflows for automating builds and releases:
+This repository includes GitHub Actions workflows for automation:
 
 ### Automatic Builds
 
-- Standalone executables for Windows, macOS, and Linux are automatically built on each release tag
-- The package is automatically tested on multiple Python versions
+- Standalone executables for Linux and macOS are automatically built on each release tag
+- The package is automatically tested on multiple Python versions across Linux, macOS, and Windows
 - The package is automatically published to PyPI on each GitHub release
 
 ### Downloading Binaries
 
 Pre-built binaries are available from:
-- GitHub Releases: https://github.com/your-username/cli-pr-reviewer/releases
+- GitHub Releases: https://github.com/jesseGordon/cli-pr-reviewer/releases
 
 ### Building Your Own Binaries
 
