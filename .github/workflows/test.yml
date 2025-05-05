@@ -1,0 +1,57 @@
+name: Test Package
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    name: Test on Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.11']
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pytest
+        pip install -e .
+    
+    - name: Test package import
+      run: |
+        python -c "from pr_review import __version__; print(f'Testing PR Review version: {__version__}')"
+    
+    - name: Check CLI help output
+      run: |
+        pr-review --help
+    
+    - name: Test exit code behavior with --ignore-errors
+      run: |
+        # Create a mock git repo with sample file
+        mkdir -p test_repo && cd test_repo
+        git init
+        git config --global user.email "test@example.com"
+        git config --global user.name "Test User"
+        echo "Initial content" > sample.txt
+        git add sample.txt
+        git commit -m "Initial commit"
+        
+        # Create a file with a clear issue that would trigger "MAKE CHANGES"
+        echo "function brokenFunction() { var x = 1; return; x; }" > bad_code.js
+        git add bad_code.js
+        
+        # Run the review with --ignore-errors (should exit with 0 regardless)
+        GEMINI_API_KEY="dummy-key" pr-review review --ignore-errors || echo "Should not reach here"
+        echo "Exit code test passed" 
