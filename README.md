@@ -215,6 +215,31 @@ pr-review review --max-chars 10000
 
 This will truncate the diff to 10,000 characters before sending to the AI service.
 
+### Exit Code for CI/CD Integration
+
+The command will automatically return exit code 1 if the review suggests changes (contains "MAKE CHANGES"). This behavior makes it easy to integrate with CI/CD pipelines:
+
+```bash
+# Will exit with code 1 if changes are requested (default behavior)
+pr-review review
+
+# Example in a CI workflow
+pr-review review
+if [ $? -ne 0 ]; then
+  echo "PR review failed - changes requested"
+  exit 1
+fi
+```
+
+If you want to ignore the review result and always return a successful exit code, use the `--ignore-errors` flag:
+
+```bash
+# Always exits with code 0 regardless of review outcome
+pr-review review --ignore-errors
+```
+
+This allows you to use PR Review in automated workflows to conditionally block or flag PRs that need changes.
+
 ### Syntax Highlighting
 
 The `diff` command uses syntax highlighting to make diffs more readable:

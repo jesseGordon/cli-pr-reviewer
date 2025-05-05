@@ -54,12 +54,15 @@ def highlight_diff(diff_text: str) -> None:
         console.print(syntax)
 
 
-def print_response(response_stream: Any) -> None:
+def print_response(response_stream: Any) -> bool:
     """
     Print the formatted response from the AI provider in real-time as it streams.
     
     Args:
         response_stream: The response stream from the AI provider
+        
+    Returns:
+        bool: True if the review passed (APPROVED), False if it failed (MAKE CHANGES)
     """
     # Create a live display area
     from rich.live import Live
@@ -86,6 +89,16 @@ def print_response(response_stream: Any) -> None:
     
     # Final display with panel after streaming is complete
     console.print(Panel(Markdown(full_text), title="AI PR Review", border_style="green", box=ROUNDED))
+    
+    # Check if the response contains "MAKE CHANGES"
+    if "MAKE CHANGES" in full_text.upper():
+        if "Conclusion: MAKE CHANGES" in full_text:
+            console.print("\n[bold red]Review failed: Changes requested[/]")
+        return False
+    else:
+        if "Conclusion: APPROVED" in full_text:
+            console.print("\n[bold green]Review passed: Approved[/]")
+        return True
 
 
 def format_help_sections(help_text: str) -> None:

@@ -56,17 +56,21 @@ def cli(ctx: click.Context, verbose: bool) -> None:
 @click.option('--max-chars', type=int, help="Maximum characters to include in the diff")
 @click.option('--provider', help="AI provider to use [gemini|openai|anthropic]")
 @click.option('--model', help="Specific model to use")
+@click.option('--ignore-errors', is_flag=True, help="Always return exit code 0 even if changes requested")
 @click.argument('diff_args', nargs=-1)
 @click.pass_context
 def review_command(ctx: click.Context, staged: bool, unstaged: bool, file: Optional[str], 
                   commit: Optional[str], max_chars: Optional[int], provider: Optional[str], 
-                  model: Optional[str], diff_args: List[str]) -> None:
+                  model: Optional[str], ignore_errors: bool, diff_args: List[str]) -> None:
     """
     Review code changes using AI.
     
     By default, reviews staged changes if no options are provided.
     You can specify different sources of changes with options, or provide
     arguments to be passed directly to 'git diff'.
+    
+    The command will return exit code 1 if the review suggests changes
+    (contains "MAKE CHANGES"), unless --ignore-errors is specified.
     
     Examples:
       pr-review review                  # Review staged changes
@@ -75,6 +79,7 @@ def review_command(ctx: click.Context, staged: bool, unstaged: bool, file: Optio
       pr-review review --commit abc123  # Review changes in specific commit
       pr-review review --max-chars 5000 # Limit diff size
       pr-review review HEAD~3..HEAD     # Review last 3 commits
+      pr-review review --ignore-errors  # Don't exit with non-zero code if changes requested
     """
     try:
         config = ctx.obj['config']
@@ -113,7 +118,7 @@ def review_command(ctx: click.Context, staged: bool, unstaged: bool, file: Optio
         # Show progress while waiting for response
         with Progress(
             SpinnerColumn(),
-            TextColumn("[bold blue]Getting PR review..."),
+            TextColumn("[bold blue]Reviewing Code Changes..."),
             TimeElapsedColumn(),
             console=console,
             transient=True
@@ -122,8 +127,12 @@ def review_command(ctx: click.Context, staged: bool, unstaged: bool, file: Optio
             # Send to AI provider and get response
             review_stream = send_to_provider(prompt, active_provider, active_model, api_key)
             
-        # Print the review
-        print_response(review_stream)
+        # Print the review and get the result
+        review_passed = print_response(review_stream)
+        
+        # Exit with appropriate code unless --ignore-errors is specified
+        if not ignore_errors and not review_passed:
+            sys.exit(1)
         
     except PrReviewError as e:
         console.print(Panel(f"Error: {e.message}", title="Error", border_style="red", box=ROUNDED))
